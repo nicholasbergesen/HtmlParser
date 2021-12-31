@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.32014.148
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nick.HtmlParser", "HtmlParser\Nick.HtmlParser.csproj", "{6D25A41A-5354-40BB-81DE-8D9B450D0C01}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nick.HtmlParser", "Nick.HtmlParser\Nick.HtmlParser.csproj", "{6D25A41A-5354-40BB-81DE-8D9B450D0C01}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Test", "Test\Test.csproj", "{F7FE205B-C707-46A1-9597-7A6EC8D5DF9E}"
 EndProject
