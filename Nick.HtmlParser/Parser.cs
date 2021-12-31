@@ -24,7 +24,7 @@
 
         public static IEnumerable<Node> Parse(string html)
         {
-            List<Node> nodes = new List<Node>();
+            List<Node> nodes = new();
             int pos = 0;
             int depth = 0;
             while (pos < html.Length)
