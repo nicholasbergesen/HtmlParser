@@ -6,6 +6,10 @@ on:
         description: 'Version Number'
         required: true
         type: string
+      tag:
+        description: 'Release Tag'
+        required: true
+        type: string
 jobs:
   Publish-Nuget:
     runs-on: ubuntu-latest
@@ -26,6 +30,6 @@ jobs:
     - name: Push to Nuget
       run: dotnet nuget push ./Nick.HtmlParser/bin/Release/Nick.HtmlParser.${{ github.event.inputs.version }}.nupkg --api-key ${{ secrets.NUGETAPIKEY }} -s https://api.nuget.org/v3/index.json
     - name: Create Github Release
-      run: gh release create ${{ github.event.inputs.version }} --generate-notes
+      run: gh release create ${{ github.event.inputs.tag }} --generate-notes
     - name: Clean
       run: dotnet clean
