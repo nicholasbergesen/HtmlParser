@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 namespace Test
 {
     [TestClass]
-    internal class TestNode
+    public class TestNode
     {
         [TestMethod]
         public void NodeCreation_Test()

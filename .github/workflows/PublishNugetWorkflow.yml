@@ -24,7 +24,7 @@ jobs:
     - name: Build
       run: cd Nick.HtmlParser;dotnet build --no-restore -p:Version=${{ github.event.inputs.version }} --configuration Release;cd ..;
     - name: Test
-      run: dotnet test --no-build --verbosity normal
+      run: dotnet test --no-restore --verbosity normal
     - name: Publish
       run: dotnet pack -c Release --version-suffix ${{ github.event.inputs.version }}
     - name: Push to Nuget
