@@ -1,8 +1,11 @@
 name: Publish Nuget Package
 on:
-  push:
-    tags:
-      - '*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version Number'
+        required: true
+        type: boolean
 jobs:
   Publish-Nuget:
     runs-on: ubuntu-latest
@@ -15,14 +18,14 @@ jobs:
     - name: Restore dependencies
       run: dotnet restore
     - name: Build
-      run: cd Nick.HtmlParser;dotnet build --no-restore -p:Version=${{ git describe --abbrev=0 }} --configuration Release;cd ..;
+      run: cd Nick.HtmlParser;dotnet build --no-restore -p:Version=${{ github.event.inputs.version }} --configuration Release;cd ..;
     - name: Test
       run: dotnet test --no-build --verbosity normal
     - name: Publish
-      run: dotnet pack -c Release --version-suffix {{ git describe --abbrev=0 }}
+      run: dotnet pack -c Release --version-suffix ${{ github.event.inputs.version }}
     - name: Push to Nuget
-      run: dotnet nuget push ./Nick.HtmlParser/bin/Release/Nick.HtmlParser.${{ git describe --abbrev=0 }}.nupkg --api-key ${{ secrets.NUGETAPIKEY }} -s https://api.nuget.org/v3/index.json
+      run: dotnet nuget push ./Nick.HtmlParser/bin/Release/Nick.HtmlParser.${{ github.event.inputs.version }}.nupkg --api-key ${{ secrets.NUGETAPIKEY }} -s https://api.nuget.org/v3/index.json
     - name: Create Github Release
-      run: gh release create ${{ git describe --abbrev=0 }} --generate-notes
+      run: gh release create ${{ github.event.inputs.version }} --generate-notes
     - name: Clean
       run: dotnet clean
