@@ -15,7 +15,7 @@ jobs:
     - name: Restore dependencies
       run: dotnet restore
     - name: Build
-      run: dotnet build --no-restore -p:Version={{ git describe --abbrev=0 }} --configuration Release
+      run: cd Nick.HtmlParser;dotnet build --no-restore -p:Version={{ git describe --abbrev=0 }} --configuration Release;cd ..;
     - name: Test
       run: dotnet test --no-build --verbosity normal
     - name: Publish
