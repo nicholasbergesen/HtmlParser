@@ -1,7 +1,10 @@
-﻿namespace HtmlParser
+﻿using System.ComponentModel;
+
+namespace HtmlParser
 {
     public enum NodeType
     {
+        unknown,
         a,
         abbr,
         acronym,
@@ -12,7 +15,7 @@
         aside,
         audio,
         b,
-        baseTag,
+        @base,
         basefont,
         bb,
         bdo,
@@ -85,7 +88,7 @@
         nav,
         noframes,
         noscript,
-        objectTag,
+        @object,
         ol,
         optgroup,
         option,

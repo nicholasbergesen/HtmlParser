@@ -2,11 +2,12 @@
 {
     public interface INode
     {
-        public NodeType NodeType { get; }
+        public string Name { get; }
+        public NodeType Type { get; }
         public string? Content { get; }
         public Dictionary<string, string> Attributes { get; }
-        public int OpenTagPosition { get; }
-        public int ClosedTagPosition { get; }
+        public int OpenPosition { get; }
+        public int ClosedPosition { get; }
         public int Depth { get; }
     }
 
@@ -15,19 +16,21 @@
         internal Node(string node, int depth, int openTagPosition)
         {
             _nodeLength = node.Length;
-            OpenTagPosition = openTagPosition;
+            OpenPosition = openTagPosition;
             Depth = depth;
-            ClosedTagPosition = -1;
+            ClosedPosition = -1;
             Attributes = new Dictionary<string, string>();
 
             var firstSpacePos = node.IndexOf(' ');
-            if (firstSpacePos == -1)
-            {
-                NodeType = Enum.Parse<NodeType>(node, ignoreCase: true);
-                return;
-            }
+            Name = firstSpacePos == -1 ? node : node[0..firstSpacePos];
+            if (Enum.TryParse(Name, ignoreCase: true, out NodeType nodeType))
+                Type = nodeType;
+            else
+                Type = NodeType.unknown;
 
-            NodeType = Enum.Parse<NodeType>(node[0..firstSpacePos], ignoreCase: true);
+            if (firstSpacePos == -1)
+                return;
+
             var attributes = node[(firstSpacePos + 1)..^0];
             var attPos = 0;
             while (attPos < attributes.Length)
@@ -53,7 +56,8 @@
 
                 var name = attributes[attPos..(firstQuote - 1)];
                 var value = attributes[(firstQuote + 1)..secondQuote];
-                Attributes.Add(name, value);
+                //TODO: Include in document errors when there are duplicates.
+                Attributes.TryAdd(name, value);
                 attPos = secondQuote + 2;
             }
         }
@@ -62,26 +66,27 @@
 
         internal void SelfCloseNode(string? content = null)
         {
-            ClosedTagPosition = OpenTagPosition + _nodeLength;
+            ClosedPosition = OpenPosition + _nodeLength;
             Content = content;
         }
 
         internal void CloseNode(int closePosition, string? content = null)
         {
-            ClosedTagPosition = closePosition;
+            ClosedPosition = closePosition;
             Content = content;
         }
 
-        public NodeType NodeType { get; internal set; }
+        public string Name { get; internal set; }
+        public NodeType Type { get; internal set; }
         public string? Content { get; internal set; }
         public Dictionary<string, string> Attributes { get; internal set; }
-        public int OpenTagPosition { get; internal set; }
-        public int ClosedTagPosition { get; internal set; }
+        public int OpenPosition { get; internal set; }
+        public int ClosedPosition { get; internal set; }
         public int Depth { get; internal set; }
 
         public override string ToString()
         {
-            return $"{NodeType} {OpenTagPosition} {ClosedTagPosition}";
+            return $"{Name} {OpenPosition} {ClosedPosition}";
         }
     }
 }

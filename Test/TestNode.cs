@@ -15,10 +15,10 @@ namespace Test
         public void NodeCreation_Test()
         {
             var node = new Node("html class=\" p24_live\" lang=\'en\' xml:lang=\"en\" xmlns=\"http://www.w3.org/1999/xhtml\"", 0, 0);
-            Assert.AreEqual(NodeType.html, node.NodeType);
+            Assert.AreEqual(NodeType.html, node.Type);
             Assert.AreEqual(0, node.Depth);
-            Assert.AreEqual(0, node.OpenTagPosition);
-            Assert.AreEqual(-1, node.ClosedTagPosition);
+            Assert.AreEqual(0, node.OpenPosition);
+            Assert.AreEqual(-1, node.ClosedPosition);
             Assert.AreEqual(4, node.Attributes.Count);
             Assert.AreEqual(" p24_live", node.Attributes["class"]);
             Assert.AreEqual("en", node.Attributes["lang"]);

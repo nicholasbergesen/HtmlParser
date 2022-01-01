@@ -7,7 +7,7 @@ namespace HtmlParser
         private static readonly HashSet<NodeType> _voidTags = new()
         {
             NodeType.area,
-            NodeType.baseTag,
+            NodeType.@base,
             NodeType.br,
             NodeType.col,
             NodeType.command,
@@ -61,6 +61,12 @@ namespace HtmlParser
                         }
                         continue;
                     }
+                    else if (html[pos + 1] == '?')
+                    {
+                        while (!(html[++pos] == '?' && html[pos + 1] == '>')) ;
+                        pos += 2;
+                        continue;
+                    }
 
                     bool isCloseTag = html[pos + 1] == '/';
                     var closeBracketPos = pos;
@@ -76,30 +82,30 @@ namespace HtmlParser
                     var nodeText = html[startNodeTextPos..endNodeTextPos];
 
                     var node = new Node(nodeText, depth, pos);
-                    var isSkipTag = _skipTag.Contains(node.NodeType);
+                    var isSkipTag = _skipTag.Contains(node.Type);
 
-                    if (isSelfClosing || _voidTags.Contains(node.NodeType))
+                    if (isSelfClosing || _voidTags.Contains(node.Type))
                     {
-                        node.SelfCloseNode(content: loadContent ? html[node.OpenTagPosition..(node.OpenTagPosition + nodeText.Length + 1)] : null);
+                        node.SelfCloseNode(content: loadContent ? html[node.OpenPosition..(node.OpenPosition + nodeText.Length + 1)] : null);
                         nodes.Add(node);
                     }
                     else if (isSkipTag)
                     {
-                        var closeTag = $"</{node.NodeType}>";
+                        var closeTag = $"</{node.Name}>";
                         var closeTagPos = html.IndexOf(closeTag, pos);
                         if (closeTagPos == -1)
-                            throw new Exception($"Unable to find close tag for {node.NodeType} at char position {pos}");
+                            throw new Exception($"Unable to find close tag for {node.Name} at char position {pos}");
                         var closePos = closeTagPos + closeTag.Length;
-                        node.CloseNode(closePosition: closePos, content: loadContent ? html[node.OpenTagPosition..(closePos + 1)] : null);
+                        node.CloseNode(closePosition: closePos, content: loadContent ? html[node.OpenPosition..(closePos + 1)] : null);
                         pos = closePos;
                     }
                     else if (isCloseTag)
                     {
                         depth--;
                         var unclosedTag = nodes.FirstOrDefault(x =>
-                            x.NodeType == node.NodeType
+                            x.Name == node.Name
                             && x.Depth == depth
-                            && x.ClosedTagPosition == -1);
+                            && x.ClosedPosition == -1);
 
                         //if is null then its possible there are unclosed tags causing depth calculation to be incorrect.
                         //Solution: Check for unclosed tags in previous depth, and close them as self closed tags.
@@ -108,27 +114,29 @@ namespace HtmlParser
                         if (unclosedTag is null)
                         {
                             var openTag = nodes
-                                .OrderByDescending(x => x.OpenTagPosition)
+                                .OrderByDescending(x => x.OpenPosition)
                                 .FirstOrDefault(x =>
-                                    x.NodeType == node.NodeType &&
-                                    x.ClosedTagPosition == -1);
+                                    x.Name == node.Name &&
+                                    x.ClosedPosition == -1);
 
                             //if no matching open tag found, then ignore rogue closing tag.
                             //TODO: log as document error.
                             if (openTag is null)
                             {
+                                pos++;
+                                depth++;//restore depth
                                 continue;
                             }
 
                             var unclosedChildren = nodes
                                 .Where(x => openTag.Depth < x.Depth
-                                    && openTag.OpenTagPosition < x.OpenTagPosition
-                                    && x.ClosedTagPosition == -1);
+                                    && openTag.OpenPosition < x.OpenPosition
+                                    && x.ClosedPosition == -1);
 
                             var closedChildren = nodes
                                 .Where(x => openTag.Depth < x.Depth
-                                    && openTag.OpenTagPosition < x.OpenTagPosition
-                                    && x.ClosedTagPosition < pos)
+                                    && openTag.OpenPosition < x.OpenPosition
+                                    && x.ClosedPosition < pos)
                                 .ToList(); //call .ToList() to execute .Where before populating self closing in unclosedChildren enumerable.
 
                             //close all unclosed children
@@ -148,16 +156,16 @@ namespace HtmlParser
 
                             //attempt to refetch unclosed tag with updated depth
                             unclosedTag = nodes.FirstOrDefault(x =>
-                                x.NodeType == node.NodeType
+                                x.Name == node.Name
                                 && x.Depth == depth
-                                && x.ClosedTagPosition == -1);
+                                && x.ClosedPosition == -1);
 
                             if (unclosedTag is null)
-                                throw new Exception($"Unable to parse document. Error occored parsing character at position {pos}. Possible issue with {openTag.NodeType} as char position {openTag.OpenTagPosition}");
+                                throw new Exception($"Unable to parse document. Error occored parsing character at position {pos}. Possible issue with {openTag.Name} as char position {openTag.OpenPosition}");
 
                         }
 
-                        unclosedTag.CloseNode(closePosition: closeBracketPos, content: loadContent ? html[unclosedTag.OpenTagPosition..(closeBracketPos + 1)] : null);
+                        unclosedTag.CloseNode(closePosition: closeBracketPos, content: loadContent ? html[unclosedTag.OpenPosition..(closeBracketPos + 1)] : null);
                     }
                     else
                     {
