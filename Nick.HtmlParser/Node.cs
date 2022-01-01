@@ -60,12 +60,13 @@
 
         private readonly int _nodeLength;
 
-        internal void SelfCloseNode()
+        internal void SelfCloseNode(string? content = null)
         {
             ClosedTagPosition = OpenTagPosition + _nodeLength;
+            Content = content;
         }
 
-        internal void CloseNode(int closePosition, string content)
+        internal void CloseNode(int closePosition, string? content = null)
         {
             ClosedTagPosition = closePosition;
             Content = content;

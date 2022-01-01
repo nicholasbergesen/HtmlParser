@@ -22,7 +22,7 @@ jobs:
     - name: Restore dependencies
       run: dotnet restore
     - name: Build
-      run: cd Nick.HtmlParser;dotnet build --no-restore -p:Version=${{ github.event.inputs.version }} --configuration Release;cd ..;
+      run: cd Nick.HtmlParser;dotnet build --no-restore --configuration Release;cd ..;
     - name: Test
       run: dotnet test --no-restore --verbosity normal
     - name: Publish

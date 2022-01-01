@@ -30,7 +30,7 @@ namespace HtmlParser
             NodeType.style
         };
 
-        public static IEnumerable<INode> Parse(string html)
+        public static IEnumerable<INode> Parse(string html, bool loadContent = false)
         {
             List<Node> nodes = new();
             int pos = 0;
@@ -80,7 +80,7 @@ namespace HtmlParser
 
                     if (isSelfClosing || _voidTags.Contains(node.NodeType))
                     {
-                        node.SelfCloseNode();
+                        node.SelfCloseNode(content: loadContent ? html[node.OpenTagPosition..(node.OpenTagPosition + nodeText.Length + 1)] : null);
                         nodes.Add(node);
                     }
                     else if (isSkipTag)
@@ -90,7 +90,7 @@ namespace HtmlParser
                         if (closeTagPos == -1)
                             throw new Exception($"Unable to find close tag for {node.NodeType} at char position {pos}");
                         var closePos = closeTagPos + closeTag.Length;
-                        node.CloseNode(closePosition: closePos, content: html[node.OpenTagPosition..(closePos + 1)]);
+                        node.CloseNode(closePosition: closePos, content: loadContent ? html[node.OpenTagPosition..(closePos + 1)] : null);
                         pos = closePos;
                     }
                     else if (isCloseTag)
@@ -157,7 +157,7 @@ namespace HtmlParser
 
                         }
 
-                        unclosedTag.CloseNode(closePosition: closeBracketPos, content: html[unclosedTag.OpenTagPosition..(closeBracketPos + 1)]);
+                        unclosedTag.CloseNode(closePosition: closeBracketPos, content: loadContent ? html[unclosedTag.OpenTagPosition..(closeBracketPos + 1)] : null);
                     }
                     else
                     {
