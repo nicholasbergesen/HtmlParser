@@ -1,24 +1,31 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-	<PackageId>Nick.HtmlParser</PackageId>
-	<Version>1.0.0</Version>
-	<Authors>Nicholas Bergesen</Authors>
-	<Company>Nicholas Bergesen</Company>
-	<PackageReleaseNotes>First release</PackageReleaseNotes>
-	<PackageTags>html parser, parse, html,flat structure, flatten html</PackageTags>
-	<Description>
-		This library parses Html into a flat structure.
+	<PropertyGroup>
+		<TargetFramework>net6.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<PackageId>Nick.HtmlParser</PackageId>
+		<Version>1.0.0</Version>
+		<Authors>Nicholas Bergesen</Authors>
+		<Company>Nicholas Bergesen</Company>
+		<PackageReleaseNotes>First release</PackageReleaseNotes>
+		<PackageTags>html parser, parse, html,flat structure, flatten html</PackageTags>
+		<Description>
+			This library parses Html into a flat structure.
 		
-		Please report any issues and I'll update them asap, I'm sure there are still many broken cases.
+			Please report any issues and I'll update them asap, I'm sure there are still many broken cases.
 		
-		Future Features:
-		- Report malformed html.
-		- Don't fail on unknown Html tags.
-	</Description>
-  </PropertyGroup>
+			Future Features:
+			- Report malformed html.
+			- Don't fail on unknown Html tags.
+		</Description>
+		<RepositoryType>git</RepositoryType>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+			<_Parameter1>Test</_Parameter1>
+		</AssemblyAttribute>
+	</ItemGroup>
 
 </Project>
