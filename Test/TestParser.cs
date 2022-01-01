@@ -32,5 +32,16 @@ namespace Test
             Assert.AreEqual("en", node.Attributes["xml:lang"]);
             Assert.AreEqual("http://www.w3.org/1999/xhtml", node.Attributes["xmlns"]);
         }
+
+        [TestMethod]
+        public void Depth_Test()
+        {
+            var html = File.ReadAllText("test2.html");
+            var nodes = Parser.Parse(html);
+            foreach (var node in nodes)
+            {
+                System.Console.WriteLine(node);
+            }
+        }
     }
 }

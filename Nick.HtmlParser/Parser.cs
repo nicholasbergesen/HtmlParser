@@ -36,7 +36,7 @@
                     //skip over comments in the document
                     if (html[pos + 1] == '!')
                     {
-                        while (html[pos] != '-' && html[pos + 1] != '-' && html[pos + 2] != '>')
+                        while (!(html[pos] == '-' && html[pos + 1] == '-' && html[pos + 2] == '>'))
                         {
                             pos++;
                         }
