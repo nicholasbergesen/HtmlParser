@@ -22,5 +22,7 @@ jobs:
       run: dotnet pack -c Release --version-suffix {{ git describe --abbrev=0 }}
     - name: Push to Nuget
       run: dotnet nuget push ./Nick.HtmlParser/bin/Release/Nick.HtmlParser.{{ git describe --abbrev=0 }}.nupkg --api-key ${{ secrets.NUGETAPIKEY }} -s https://api.nuget.org/v3/index.json
+    - name: Create Github Release
+      run: gh release create {{ git describe --abbrev=0 }} --generate-notes
     - name: Clean
       run: dotnet clean
