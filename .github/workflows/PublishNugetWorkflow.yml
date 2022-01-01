@@ -5,7 +5,7 @@ on:
       version:
         description: 'Version Number'
         required: true
-        type: boolean
+        type: string
 jobs:
   Publish-Nuget:
     runs-on: ubuntu-latest
