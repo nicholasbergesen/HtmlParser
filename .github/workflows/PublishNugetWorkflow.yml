@@ -4,8 +4,8 @@ on:
     branches:
       - main
       - master
-    paths:
-      - 'Nick.HtmlParser/**'
+    tags:
+      - '*'
 jobs:
   Publish-Nuget:
     runs-on: ubuntu-latest
