@@ -15,12 +15,12 @@ jobs:
     - name: Restore dependencies
       run: dotnet restore
     - name: Build
-      run: dotnet build --no-restore
+      run: dotnet build --no-restore -p:Version={{ git describe --abbrev=0 }} --configuration Release
     - name: Test
       run: dotnet test --no-build --verbosity normal
     - name: Publish
-      run: dotnet pack -c Release
+      run: dotnet pack -c Release --version-suffix {{ git describe --abbrev=0 }}
     - name: Push to Nuget
-      run: dotnet nuget push ./Nick.HtmlParser/bin/Release/Nick.HtmlParser.1.0.0.nupkg --api-key ${{ secrets.NUGETAPIKEY }} -s https://api.nuget.org/v3/index.json
+      run: dotnet nuget push ./Nick.HtmlParser/bin/Release/Nick.HtmlParser.{{ git describe --abbrev=0 }}.nupkg --api-key ${{ secrets.NUGETAPIKEY }} -s https://api.nuget.org/v3/index.json
     - name: Clean
       run: dotnet clean
