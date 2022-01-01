@@ -12,21 +12,28 @@
             var firstSpacePos = node.IndexOf(' ');
             if (firstSpacePos == -1)
             {
-                NodeType = Enum.Parse<NodeType>(node, true);
+                NodeType = Enum.Parse<NodeType>(node, ignoreCase: true);
                 return;
             }
 
-            NodeType = Enum.Parse<NodeType>(node[0..firstSpacePos], true);
+            NodeType = Enum.Parse<NodeType>(node[0..firstSpacePos], ignoreCase: true);
             var attributes = node[(firstSpacePos + 1)..^0];
             var attPos = 0;
             while (attPos < attributes.Length)
             {
                 var firstSingleQuote = attributes.IndexOf('\'', attPos);
                 var firstDoubleQuote = attributes.IndexOf('\"', attPos);
+
+                //return if no quote is found.
+                if (firstSingleQuote == -1 && firstDoubleQuote == -1)
+                    break;
+
                 var firstQuote = firstSingleQuote == -1 ? firstDoubleQuote : firstSingleQuote;
+                //If both single and double quotes are found, use the one with the smallest index.
                 if (firstSingleQuote != -1 && firstDoubleQuote != -1)
                     firstQuote = Math.Min(firstSingleQuote, firstDoubleQuote);
 
+                //find the second quote based on the single/double value used for the firstQuote
                 var secondQuote = -1;
                 if (firstSingleQuote == firstQuote)
                     secondQuote = attributes.IndexOf('\'', firstQuote + 1);
