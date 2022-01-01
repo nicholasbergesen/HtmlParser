@@ -36,11 +36,22 @@
                     //skip over comments in the document
                     if (html[pos + 1] == '!')
                     {
-                        while (!(html[pos] == '-' && html[pos + 1] == '-' && html[pos + 2] == '>'))
+                        bool isDoctype = html[(pos + 2)..(pos + 9)].Equals("DOCTYPE", StringComparison.InvariantCultureIgnoreCase);
+
+                        if(isDoctype)
                         {
+                            pos += 9;//skip ahead doctype chars.
+                            while (html[++pos] != '>') ;
                             pos++;
                         }
-                        pos += 3;
+                        else
+                        {
+                            while (!(html[pos] == '-' && html[pos + 1] == '-' && html[pos + 2] == '>'))
+                            {
+                                pos++;
+                            }
+                            pos += 3;
+                        }
                         continue;
                     }
 
