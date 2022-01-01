@@ -1,9 +1,20 @@
 ﻿namespace HtmlParser
 {
-    public class Node
+    public interface INode
     {
-        public Node(string node, int depth, int openTagPosition)
+        public NodeType NodeType { get; }
+        public string? Content { get; }
+        public Dictionary<string, string> Attributes { get; }
+        public int OpenTagPosition { get; }
+        public int ClosedTagPosition { get; }
+        public int Depth { get; }
+    }
+
+    public class Node : INode
+    {
+        internal Node(string node, int depth, int openTagPosition)
         {
+            _nodeLength = node.Length;
             OpenTagPosition = openTagPosition;
             Depth = depth;
             ClosedTagPosition = -1;
@@ -47,12 +58,25 @@
             }
         }
 
-        public NodeType NodeType { get; set; }
-        public string? Content { get; set; }
-        public Dictionary<string, string> Attributes { get; set; }
-        public int OpenTagPosition { get; set; }
-        public int ClosedTagPosition { get; set; }
-        public int Depth { get; set; }
+        private readonly int _nodeLength;
+
+        internal void SelfCloseNode()
+        {
+            ClosedTagPosition = OpenTagPosition + _nodeLength;
+        }
+
+        internal void CloseNode(int closePosition, string content)
+        {
+            ClosedTagPosition = closePosition;
+            Content = content;
+        }
+
+        public NodeType NodeType { get; internal set; }
+        public string? Content { get; internal set; }
+        public Dictionary<string, string> Attributes { get; internal set; }
+        public int OpenTagPosition { get; internal set; }
+        public int ClosedTagPosition { get; internal set; }
+        public int Depth { get; internal set; }
 
         public override string ToString()
         {

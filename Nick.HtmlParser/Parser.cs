@@ -1,28 +1,36 @@
-﻿namespace HtmlParser
+﻿using System.Security.Cryptography.X509Certificates;
+
+namespace HtmlParser
 {
     public class Parser
     {
-        private static readonly HashSet<string> _voidTags = new()
+        private static readonly HashSet<NodeType> _voidTags = new()
         {
-            "area",
-            "base",
-            "br",
-            "col",
-            "command",
-            "embed",
-            "hr",
-            "img",
-            "input",
-            "keygen",
-            "link",
-            "meta",
-            "param",
-            "source",
-            "track",
-            "wbr"
+            NodeType.area,
+            NodeType.baseTag,
+            NodeType.br,
+            NodeType.col,
+            NodeType.command,
+            NodeType.embed,
+            NodeType.hr,
+            NodeType.img,
+            NodeType.input,
+            NodeType.keygen,
+            NodeType.link,
+            NodeType.meta,
+            NodeType.param,
+            NodeType.source,
+            NodeType.track,
+            NodeType.wbr
         };
 
-        public static IEnumerable<Node> Parse(string html)
+        private static readonly HashSet<NodeType> _skipTag = new()
+        {
+            NodeType.script,
+            NodeType.style
+        };
+
+        public static IEnumerable<INode> Parse(string html)
         {
             List<Node> nodes = new();
             int pos = 0;
@@ -30,7 +38,6 @@
             while (pos < html.Length)
             {
                 char cur = html[pos];
-                //open tag
                 if (cur == '<')
                 {
                     //skip over comments in the document
@@ -38,13 +45,13 @@
                     {
                         bool isDoctype = html[(pos + 2)..(pos + 9)].Equals("DOCTYPE", StringComparison.InvariantCultureIgnoreCase);
 
-                        if(isDoctype)
+                        if (isDoctype)
                         {
                             pos += 9;//skip ahead doctype chars.
                             while (html[++pos] != '>') ;
                             pos++;
                         }
-                        else
+                        else //if not doctype then assume is comment
                         {
                             while (!(html[pos] == '-' && html[pos + 1] == '-' && html[pos + 2] == '>'))
                             {
@@ -55,37 +62,107 @@
                         continue;
                     }
 
-                    bool isEndTag = html[pos + 1] == '/';
-                    var limit = Math.Min(html.Length - pos, 1000);
-                    var closingBracketPos = pos;
-                    while (html[++closingBracketPos] != '>') ;
-                    var isSelfClosing = html[closingBracketPos - 1] == '/';
-                    var nodeText = isEndTag ? html[(pos + 2)..closingBracketPos] : html[(pos + 1)..closingBracketPos];
-                    var node = new Node(nodeText, depth, pos);
-                    isSelfClosing |= _voidTags.Contains(node.NodeType.ToString());
+                    bool isCloseTag = html[pos + 1] == '/';
+                    var closeBracketPos = pos;
+                    while (html[++closeBracketPos] != '>') ;
+                    var isSelfClosing = html[closeBracketPos - 1] == '/';
 
+                    var startNodeTextPos = pos + 1;
+                    var endNodeTextPos = closeBracketPos;
+                    if (isCloseTag)
+                        startNodeTextPos = pos + 2;
                     if (isSelfClosing)
+                        endNodeTextPos = closeBracketPos - 1;
+                    var nodeText = html[startNodeTextPos..endNodeTextPos];
+
+                    var node = new Node(nodeText, depth, pos);
+                    var isSkipTag = _skipTag.Contains(node.NodeType);
+
+                    if (isSelfClosing || _voidTags.Contains(node.NodeType))
                     {
-                        node.ClosedTagPosition = pos + nodeText.Length;
+                        node.SelfCloseNode();
                         nodes.Add(node);
                     }
-                    else
+                    else if (isSkipTag)
                     {
-                        if (isEndTag)
+                        var closeTag = $"</{node.NodeType}>";
+                        var closeTagPos = html.IndexOf(closeTag, pos);
+                        if (closeTagPos == -1)
+                            throw new Exception($"Unable to find close tag for {node.NodeType} at char position {pos}");
+                        var closePos = closeTagPos + closeTag.Length;
+                        node.CloseNode(closePosition: closePos, content: html[node.OpenTagPosition..(closePos + 1)]);
+                        pos = closePos;
+                    }
+                    else if (isCloseTag)
+                    {
+                        depth--;
+                        var unclosedTag = nodes.FirstOrDefault(x =>
+                            x.NodeType == node.NodeType
+                            && x.Depth == depth
+                            && x.ClosedTagPosition == -1);
+
+                        //if is null then its possible there are unclosed tags causing depth calculation to be incorrect.
+                        //Solution: Check for unclosed tags in previous depth, and close them as self closed tags.
+                        //depth-- for each unclosed tag. All tags after the unclosed tag up to the current position will need their depth value corrected.
+                        //Note: Could be multiple unclosed tags.
+                        if (unclosedTag is null)
                         {
-                            depth--;
-                            var unclosedTag = nodes.First(x =>
+                            var openTag = nodes
+                                .OrderByDescending(x => x.OpenTagPosition)
+                                .FirstOrDefault(x =>
+                                    x.NodeType == node.NodeType &&
+                                    x.ClosedTagPosition == -1);
+
+                            //if no matching open tag found, then ignore rogue closing tag.
+                            //TODO: log as document error.
+                            if (openTag is null)
+                            {
+                                continue;
+                            }
+
+                            var unclosedChildren = nodes
+                                .Where(x => openTag.Depth < x.Depth
+                                    && openTag.OpenTagPosition < x.OpenTagPosition
+                                    && x.ClosedTagPosition == -1);
+
+                            var closedChildren = nodes
+                                .Where(x => openTag.Depth < x.Depth
+                                    && openTag.OpenTagPosition < x.OpenTagPosition
+                                    && x.ClosedTagPosition < pos)
+                                .ToList(); //call .ToList() to execute .Where before populating self closing in unclosedChildren enumerable.
+
+                            //close all unclosed children
+                            int depthCorrection = 0;
+                            foreach (var child in unclosedChildren)
+                            {
+                                child.SelfCloseNode();
+                                depthCorrection++;
+                            }
+
+                            //correct child depths by correction amount
+                            depth -= depthCorrection;
+                            foreach (var child in closedChildren)
+                            {
+                                child.Depth -= depthCorrection;
+                            }
+
+                            //attempt to refetch unclosed tag with updated depth
+                            unclosedTag = nodes.FirstOrDefault(x =>
                                 x.NodeType == node.NodeType
                                 && x.Depth == depth
                                 && x.ClosedTagPosition == -1);
 
-                            unclosedTag.ClosedTagPosition = closingBracketPos;
+                            if (unclosedTag is null)
+                                throw new Exception($"Unable to parse document. Error occored parsing character at position {pos}. Possible issue with {openTag.NodeType} as char position {openTag.OpenTagPosition}");
+
                         }
-                        else
-                        {
-                            nodes.Add(node);
-                            depth++;
-                        }
+
+                        unclosedTag.CloseNode(closePosition: closeBracketPos, content: html[unclosedTag.OpenTagPosition..(closeBracketPos + 1)]);
+                    }
+                    else
+                    {
+                        nodes.Add(node);
+                        depth++;
                     }
                 }
 
