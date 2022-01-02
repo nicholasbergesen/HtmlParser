@@ -26,6 +26,14 @@ namespace Test
         }
 
         [TestMethod]
+        public void Parser3_Test()
+        {
+            var html = File.ReadAllText("test3.html");
+            var nodes = Parser.Parse(html, true);
+            Assert.IsTrue(ValidateNodes(nodes));
+        }
+
+        [TestMethod]
         public void Parser_Depth_Test()
         {
         }

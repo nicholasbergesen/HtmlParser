@@ -2,6 +2,7 @@
 
 namespace HtmlParser
 {
+    //test https://www.facebook.com/news24
     public class Parser
     {
         private static readonly HashSet<NodeType> _voidTags = new()
@@ -26,7 +27,7 @@ namespace HtmlParser
 
         private static readonly HashSet<NodeType> _skipTag = new()
         {
-            NodeType.script,
+            NodeType.script, //valid '<' characters inside script can throw off parsing.
             NodeType.style
         };
 
@@ -74,30 +75,40 @@ namespace HtmlParser
                     var isSelfClosing = html[closeBracketPos - 1] == '/';
 
                     var startNodeTextPos = pos + 1;
-                    var endNodeTextPos = closeBracketPos;
                     if (isCloseTag)
                         startNodeTextPos = pos + 2;
-                    if (isSelfClosing)
-                        endNodeTextPos = closeBracketPos - 1;
-                    var nodeText = html[startNodeTextPos..endNodeTextPos];
-
+                    var nodeText = html[startNodeTextPos..(isSelfClosing ? closeBracketPos - 1 : closeBracketPos)];
                     var node = new Node(nodeText, depth, pos);
                     var isSkipTag = _skipTag.Contains(node.Type);
 
                     if (isSelfClosing || _voidTags.Contains(node.Type))
                     {
-                        node.SelfCloseNode(content: loadContent ? html[node.OpenPosition..(node.OpenPosition + nodeText.Length + 1)] : null);
+                        node.SelfCloseNode(content: loadContent ? html[node.OpenPosition..(closeBracketPos + 1)] : null);
                         nodes.Add(node);
                     }
                     else if (isSkipTag)
                     {
+                        var openTag = $"<{node.Name}>";
                         var closeTag = $"</{node.Name}>";
-                        var closeTagPos = html.IndexOf(closeTag, pos);
-                        if (closeTagPos == -1)
-                            throw new Exception($"Unable to find close tag for {node.Name} at char position {pos}");
-                        var closePos = closeTagPos + closeTag.Length;
-                        node.CloseNode(closePosition: closePos, content: loadContent ? html[node.OpenPosition..(closePos + 1)] : null);
-                        pos = closePos;
+                        int closeTagCounter = 0;
+                        int closeTagPos = closeBracketPos;
+                        //this look caters for nested skip tags. e.g <sciprt><script></script></script>
+                        while(closeTagCounter < 1)
+                        {
+                            closeTagPos++;
+
+                            if(closeTagPos > (html.Length - closeTag.Length))
+                                throw new Exception($"Unable to find close tag for {node.Name} at char position {pos}");
+
+                            if (html[closeTagPos..(openTag.Length + closeTagPos)] == openTag)
+                                closeTagCounter--;
+                            else if (html[closeTagPos..(closeTag.Length + closeTagPos)] == closeTag)
+                                closeTagCounter++;
+                        }
+
+                        node.CloseNode(closePosition: closeTagPos + closeTag.Length, content: loadContent ? html[node.OpenPosition..(closeTagPos + closeTag.Length)] : null);
+                        nodes.Add(node);
+                        pos = closeTagPos;
                     }
                     else if (isCloseTag)
                     {

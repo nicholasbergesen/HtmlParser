@@ -20,18 +20,18 @@
             Depth = depth;
             ClosedPosition = -1;
             Attributes = new Dictionary<string, string>();
-
-            var firstSpacePos = node.IndexOf(' ');
-            Name = firstSpacePos == -1 ? node : node[0..firstSpacePos];
+            var firstSeparatorPos = 0;
+            while (++firstSeparatorPos < node.Length && !char.IsWhiteSpace(node, firstSeparatorPos)) ;
+            Name = firstSeparatorPos == node.Length ? node : node[0..firstSeparatorPos];
             if (Enum.TryParse(Name, ignoreCase: true, out NodeType nodeType))
                 Type = nodeType;
             else
                 Type = NodeType.unknown;
 
-            if (firstSpacePos == -1)
+            if (firstSeparatorPos == node.Length)
                 return;
 
-            var attributes = node[(firstSpacePos + 1)..^0];
+            var attributes = node[(firstSeparatorPos + 1)..^0];
             var attPos = 0;
             while (attPos < attributes.Length)
             {

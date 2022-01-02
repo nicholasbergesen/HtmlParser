@@ -3,21 +3,29 @@
 	<PropertyGroup>
 		<TargetFramework>net6.0</TargetFramework>
 		<ImplicitUsings>enable</ImplicitUsings>
-		<Version>1.0.2</Version>
+		<Version>1.0.4</Version>
 		<Nullable>enable</Nullable>
 		<PackageId>Nick.HtmlParser</PackageId>
 		<Authors>Nicholas Bergesen</Authors>
 		<Company>Nicholas Bergesen</Company>
-		<PackageReleaseNotes>First release</PackageReleaseNotes>
+		<PackageReleaseNotes>
+			- Cater for non standard html tags.
+			- Ignore xml.
+			- Improve parsing recovery when parsing a malformed html document. i.e closing tag without an opening tag or visa versa.
+			- Can optionally load raw node text into parsed INode objects. (Will consume more memory).
+		</PackageReleaseNotes>
 		<PackageTags>html parser, parse, html,flat structure, flatten html</PackageTags>
 		<Description>
-			This library parses Html into a flat structure.
-		
-			Please report any issues and I'll update them asap, I'm sure there are still many broken cases.
+			This library parses Html into a typed IEnumerable flat structure.
+			
+			v1.0.4 changes:
+			- Cater for non standard html tags.
+			- Ignore xml.
+			- Improve parsing recovery when parsing a malformed html document. i.e closing tag without an opening tag or visa versa.
+			- Can optionally load raw node text into parsed INode objects. (Will consume more memory).
 		
 			Future Features:
-			- Report malformed html.
-			- Don't fail on unknown Html tags.
+			- Report parsing errors.
 		</Description>
 		<RepositoryType>git</RepositoryType>
 	</PropertyGroup>
