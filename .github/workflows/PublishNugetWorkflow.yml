@@ -12,6 +12,8 @@ on:
         type: string
 jobs:
   Publish-Nuget:
+    env:
+      GH_TOKEN: ${{ github.token }}
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
