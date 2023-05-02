@@ -14,7 +14,7 @@ namespace Test
         {
             var html = File.ReadAllText("test.html");
             var nodes = Parser.Parse(html);
-            Assert.IsTrue(ValidateNodes(nodes));
+            Assert.AreEqual(1403, nodes.Count);
         }
 
         [TestMethod]
@@ -22,7 +22,7 @@ namespace Test
         {
             var html = File.ReadAllText("test2.html");
             var nodes = Parser.Parse(html);
-            Assert.IsTrue(ValidateNodes(nodes));
+            Assert.AreEqual(811, nodes.Count);
         }
 
         [TestMethod]
@@ -30,17 +30,7 @@ namespace Test
         {
             var html = File.ReadAllText("test3.html");
             var nodes = Parser.Parse(html, true);
-            Assert.IsTrue(ValidateNodes(nodes));
-        }
-
-        [TestMethod]
-        public void Parser_Depth_Test()
-        {
-        }
-
-        private bool ValidateNodes(IEnumerable<INode> nodes)
-        {
-            return true;
+            Assert.AreEqual(1410, nodes.Count);
         }
     }
 }
