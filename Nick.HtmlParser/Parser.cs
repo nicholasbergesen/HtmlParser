@@ -2,7 +2,6 @@
 
 namespace HtmlParser
 {
-    //test https://www.facebook.com/news24
     public class Parser
     {
         private static readonly HashSet<NodeType> _voidTags = new()
@@ -27,7 +26,7 @@ namespace HtmlParser
 
         private static readonly HashSet<NodeType> _skipTag = new()
         {
-            NodeType.script, //valid '<' characters inside script can throw off parsing.
+            NodeType.script, //valid '<' characters inside script can cause parse errors.
             NodeType.style
         };
 
@@ -118,7 +117,7 @@ namespace HtmlParser
                             && x.Depth == depth
                             && x.ClosedPosition == -1);
 
-                        //if is null then its possible there are unclosed tags causing depth calculation to be incorrect.
+                        //if `unclosedTag` is null its possible there are unclosed tags causing depth calculation to be incorrect.
                         //Solution: Check for unclosed tags in previous depth, and close them as self closed tags.
                         //depth-- for each unclosed tag. All tags after the unclosed tag up to the current position will need their depth value corrected.
                         //Note: Could be multiple unclosed tags.
@@ -172,7 +171,7 @@ namespace HtmlParser
                                 && x.ClosedPosition == -1);
 
                             if (unclosedTag is null)
-                                throw new Exception($"Unable to parse document. Error occored parsing character at position {pos}. Possible issue with {openTag.Name} as char position {openTag.OpenPosition}");
+                                throw new Exception($"Unable to parse document. Error occored parsing character at position {pos}. Possible issue with {openTag.Name} at character position {openTag.OpenPosition}");
 
                         }
 
