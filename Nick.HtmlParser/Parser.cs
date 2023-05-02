@@ -30,158 +30,172 @@ namespace HtmlParser
             NodeType.style
         };
 
-        public static IEnumerable<INode> Parse(string html, bool loadContent = false)
+        public static IReadOnlyList<INode> Parse(string html, bool loadContent = false)
         {
             List<Node> nodes = new();
             int pos = 0;
             int depth = 0;
             while (pos < html.Length)
             {
-                char cur = html[pos];
-                if (cur == '<')
+                //go to next open chevron
+                if (html[pos] != '<')
                 {
-                    //skip over comments in the document
-                    if (html[pos + 1] == '!')
-                    {
-                        bool isDoctype = html[(pos + 2)..(pos + 9)].Equals("DOCTYPE", StringComparison.InvariantCultureIgnoreCase);
+                    pos++;
+                    continue;
+                }
 
-                        if (isDoctype)
+                //skip over comments in the document
+                if (html[pos + 1] == '!')
+                {
+                    bool isDoctype = html[(pos + 2)..(pos + 9)].Equals("DOCTYPE", StringComparison.InvariantCultureIgnoreCase);
+
+                    if (isDoctype)
+                    {
+                        pos += 9;//skip ahead doctype chars.
+                        while (html[++pos] != '>') ;
+                        pos++;
+                    }
+                    else //if not doctype then assume is comment
+                    {
+                        while (!(html[pos] == '-' && html[pos + 1] == '-' && html[pos + 2] == '>'))
                         {
-                            pos += 9;//skip ahead doctype chars.
-                            while (html[++pos] != '>') ;
                             pos++;
                         }
-                        else //if not doctype then assume is comment
+                        pos += 3;
+                    }
+                    continue;
+                }
+                else if (html[pos + 1] == '?')
+                {
+                    while (!(html[++pos] == '?' && html[pos + 1] == '>')) ;
+
+                    pos += 2;
+                    continue;
+                }
+
+                bool isCloseTag = html[pos + 1] == '/';
+                var closeChevronPos = pos;
+                while (html[++closeChevronPos] != '>') ;
+                var isSelfClosing = html[closeChevronPos - 1] == '/';
+
+                var tagNameStartPos = isCloseTag ? pos + 2 : pos + 1;
+                var tagName = html[tagNameStartPos..(isSelfClosing ? closeChevronPos - 1 : closeChevronPos)];
+                var node = new Node(tagName, depth, pos);
+                var isSkipTag = _skipTag.Contains(node.Type);
+
+                if (isSelfClosing || _voidTags.Contains(node.Type))
+                {
+
+                    node.SelfCloseNode(content: loadContent ? html[node.OpenPosition..(closeChevronPos + 1)] : null);
+                    nodes.Add(node);
+                }
+                else if (isSkipTag)
+                {
+                    var openTag = $"<{node.Name}>";
+                    var closeTag = $"</{node.Name}>";
+                    int closeTagCounter = 0;
+                    int closeTagPos = closeChevronPos;
+                    //this loop caters for nested skip tags. e.g <sciprt><script></script></script>
+                    while (closeTagCounter < 1)
+                    {
+                        closeTagPos++;
+
+                        if (closeTagPos > (html.Length - closeTag.Length))
+                            throw new Exception($"Unable to find close tag for {node.Name} at char position {pos}");
+
+                        if (html[closeTagPos..(openTag.Length + closeTagPos)] == openTag)
+                            closeTagCounter--;
+                        else if (html[closeTagPos..(closeTag.Length + closeTagPos)] == closeTag)
+                            closeTagCounter++;
+                    }
+
+                    node.CloseNode(closePosition: closeTagPos + closeTag.Length, content: loadContent ? html[node.OpenPosition..(closeTagPos + closeTag.Length)] : null);
+                    nodes.Add(node);
+                    pos = closeTagPos;
+                }
+                else if (isCloseTag)
+                {
+                    depth--;
+                    var unclosedParentNode = nodes.FirstOrDefault(x =>
+                        x.Name == node.Name
+                        && x.Depth == depth
+                        && x.ClosedPosition == -1);
+
+                    //if `unclosedParentNode` is null its possible there are unclosed tags causing depth calculation to be incorrect.
+                    //Solution: Check for unclosed tags in previous depth, and close them as self closed tags.
+                    //depth-- for each unclosed tag. All tags after the unclosed tag up to the current position will need their depth value corrected.
+                    //Note: Could be multiple unclosed tags.
+                    if (unclosedParentNode is null)
+                    {
+                        var matchingUnclosedNode = nodes
+                            .OrderByDescending(x => x.OpenPosition)
+                            .FirstOrDefault(x =>
+                                x.Name == node.Name &&
+                                x.ClosedPosition == -1);
+
+                        //if no matching open tag found, then ignore rogue closing tag.
+                        //TODO: log as document error.
+                        if (matchingUnclosedNode is null)
                         {
-                            while (!(html[pos] == '-' && html[pos + 1] == '-' && html[pos + 2] == '>'))
-                            {
-                                pos++;
-                            }
-                            pos += 3;
+                            pos++;
+                            depth++;//restore depth
+                            continue;
                         }
-                        continue;
-                    }
-                    else if (html[pos + 1] == '?')
-                    {
-                        while (!(html[++pos] == '?' && html[pos + 1] == '>')) ;
-                        pos += 2;
-                        continue;
-                    }
 
-                    bool isCloseTag = html[pos + 1] == '/';
-                    var closeBracketPos = pos;
-                    while (html[++closeBracketPos] != '>') ;
-                    var isSelfClosing = html[closeBracketPos - 1] == '/';
+                        var unclosedChildren = nodes
+                            .Where(x => matchingUnclosedNode.Depth < x.Depth
+                                && matchingUnclosedNode.OpenPosition < x.OpenPosition
+                                && x.ClosedPosition == -1);
 
-                    var startNodeTextPos = pos + 1;
-                    if (isCloseTag)
-                        startNodeTextPos = pos + 2;
-                    var nodeText = html[startNodeTextPos..(isSelfClosing ? closeBracketPos - 1 : closeBracketPos)];
-                    var node = new Node(nodeText, depth, pos);
-                    var isSkipTag = _skipTag.Contains(node.Type);
+                        var closedChildren = nodes
+                            .Where(x => matchingUnclosedNode.Depth < x.Depth
+                                && matchingUnclosedNode.OpenPosition < x.OpenPosition
+                                && x.ClosedPosition < pos)
+                            .ToList(); //call .ToList() to execute .Where before populating self closing in unclosedChildren enumerable.
 
-                    if (isSelfClosing || _voidTags.Contains(node.Type))
-                    {
-                        node.SelfCloseNode(content: loadContent ? html[node.OpenPosition..(closeBracketPos + 1)] : null);
-                        nodes.Add(node);
-                    }
-                    else if (isSkipTag)
-                    {
-                        var openTag = $"<{node.Name}>";
-                        var closeTag = $"</{node.Name}>";
-                        int closeTagCounter = 0;
-                        int closeTagPos = closeBracketPos;
-                        //this look caters for nested skip tags. e.g <sciprt><script></script></script>
-                        while(closeTagCounter < 1)
+                        //close all unclosed children
+                        int depthCorrection = 0;
+                        foreach (var child in unclosedChildren)
                         {
-                            closeTagPos++;
-
-                            if(closeTagPos > (html.Length - closeTag.Length))
-                                throw new Exception($"Unable to find close tag for {node.Name} at char position {pos}");
-
-                            if (html[closeTagPos..(openTag.Length + closeTagPos)] == openTag)
-                                closeTagCounter--;
-                            else if (html[closeTagPos..(closeTag.Length + closeTagPos)] == closeTag)
-                                closeTagCounter++;
+                            child.SelfCloseNode();
+                            depthCorrection++;
                         }
 
-                        node.CloseNode(closePosition: closeTagPos + closeTag.Length, content: loadContent ? html[node.OpenPosition..(closeTagPos + closeTag.Length)] : null);
-                        nodes.Add(node);
-                        pos = closeTagPos;
-                    }
-                    else if (isCloseTag)
-                    {
-                        depth--;
-                        var unclosedTag = nodes.FirstOrDefault(x =>
+                        //correct child depths by correction amount
+                        depth -= depthCorrection;
+                        foreach (var child in closedChildren)
+                        {
+                            child.Depth -= depthCorrection;
+                        }
+
+                        //attempt to refetch unclosed tag with updated depth
+                        unclosedParentNode = nodes.FirstOrDefault(x =>
                             x.Name == node.Name
                             && x.Depth == depth
                             && x.ClosedPosition == -1);
 
-                        //if `unclosedTag` is null its possible there are unclosed tags causing depth calculation to be incorrect.
-                        //Solution: Check for unclosed tags in previous depth, and close them as self closed tags.
-                        //depth-- for each unclosed tag. All tags after the unclosed tag up to the current position will need their depth value corrected.
-                        //Note: Could be multiple unclosed tags.
-                        if (unclosedTag is null)
-                        {
-                            var openTag = nodes
-                                .OrderByDescending(x => x.OpenPosition)
-                                .FirstOrDefault(x =>
-                                    x.Name == node.Name &&
-                                    x.ClosedPosition == -1);
+                        if (unclosedParentNode is null)
+                            throw new Exception($"Unable to parse document. Error occored parsing character at position {pos}. Possible issue with {matchingUnclosedNode.Name} at character position {matchingUnclosedNode.OpenPosition}");
 
-                            //if no matching open tag found, then ignore rogue closing tag.
-                            //TODO: log as document error.
-                            if (openTag is null)
-                            {
-                                pos++;
-                                depth++;//restore depth
-                                continue;
-                            }
-
-                            var unclosedChildren = nodes
-                                .Where(x => openTag.Depth < x.Depth
-                                    && openTag.OpenPosition < x.OpenPosition
-                                    && x.ClosedPosition == -1);
-
-                            var closedChildren = nodes
-                                .Where(x => openTag.Depth < x.Depth
-                                    && openTag.OpenPosition < x.OpenPosition
-                                    && x.ClosedPosition < pos)
-                                .ToList(); //call .ToList() to execute .Where before populating self closing in unclosedChildren enumerable.
-
-                            //close all unclosed children
-                            int depthCorrection = 0;
-                            foreach (var child in unclosedChildren)
-                            {
-                                child.SelfCloseNode();
-                                depthCorrection++;
-                            }
-
-                            //correct child depths by correction amount
-                            depth -= depthCorrection;
-                            foreach (var child in closedChildren)
-                            {
-                                child.Depth -= depthCorrection;
-                            }
-
-                            //attempt to refetch unclosed tag with updated depth
-                            unclosedTag = nodes.FirstOrDefault(x =>
-                                x.Name == node.Name
-                                && x.Depth == depth
-                                && x.ClosedPosition == -1);
-
-                            if (unclosedTag is null)
-                                throw new Exception($"Unable to parse document. Error occored parsing character at position {pos}. Possible issue with {openTag.Name} at character position {openTag.OpenPosition}");
-
-                        }
-
-                        unclosedTag.CloseNode(closePosition: closeBracketPos, content: loadContent ? html[unclosedTag.OpenPosition..(closeBracketPos + 1)] : null);
                     }
-                    else
+
+                    var childNodes = nodes.Where(x =>
+                            x.Depth == depth + 1
+                            && unclosedParentNode.OpenPosition < x.OpenPosition
+                            && x.ClosedPosition < closeChevronPos)
+                        .ToList();
+
+                    foreach (var child in childNodes)
                     {
-                        nodes.Add(node);
-                        depth++;
+                        child.Parent = unclosedParentNode;
                     }
+
+                    unclosedParentNode.CloseNode(closePosition: closeChevronPos, children: childNodes, content: loadContent ? html[unclosedParentNode.OpenPosition..(closeChevronPos + 1)] : null);
+                }
+                else
+                {
+                    nodes.Add(node);
+                    depth++;
                 }
 
                 pos++;

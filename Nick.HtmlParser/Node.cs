@@ -9,29 +9,31 @@
         public int OpenPosition { get; }
         public int ClosedPosition { get; }
         public int Depth { get; }
+        public INode? Parent { get; }
+        public IReadOnlyCollection<INode>? Children { get; }
     }
 
     public class Node : INode
     {
-        internal Node(string node, int depth, int openTagPosition)
+        internal Node(string tagName, int depth, int openTagPosition)
         {
-            _nodeLength = node.Length;
+            _nodeLength = tagName.Length;
             OpenPosition = openTagPosition;
             Depth = depth;
             ClosedPosition = -1;
             Attributes = new Dictionary<string, string>();
             var firstSeparatorPos = 0;
-            while (++firstSeparatorPos < node.Length && !char.IsWhiteSpace(node, firstSeparatorPos)) ;
-            Name = firstSeparatorPos == node.Length ? node : node[0..firstSeparatorPos];
+            while (++firstSeparatorPos < tagName.Length && !char.IsWhiteSpace(tagName, firstSeparatorPos)) ;
+            Name = firstSeparatorPos == tagName.Length ? tagName : tagName[0..firstSeparatorPos];
             if (Enum.TryParse(Name, ignoreCase: true, out NodeType nodeType))
                 Type = nodeType;
             else
                 Type = NodeType.unknown;
 
-            if (firstSeparatorPos == node.Length)
+            if (firstSeparatorPos == tagName.Length)
                 return;
 
-            var attributes = node[(firstSeparatorPos + 1)..^0];
+            var attributes = tagName[(firstSeparatorPos + 1)..^0];
             var attPos = 0;
             while (attPos < attributes.Length)
             {
@@ -70,8 +72,9 @@
             Content = content;
         }
 
-        internal void CloseNode(int closePosition, string? content = null)
+        internal void CloseNode(int closePosition, IReadOnlyCollection<INode>? children = null, string? content = null)
         {
+            Children = children;
             ClosedPosition = closePosition;
             Content = content;
         }
@@ -83,6 +86,8 @@
         public int OpenPosition { get; internal set; }
         public int ClosedPosition { get; internal set; }
         public int Depth { get; internal set; }
+        public INode? Parent { get; internal set; }
+        public IReadOnlyCollection<INode>? Children { get; internal set; }
 
         public override string ToString()
         {
