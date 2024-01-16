@@ -50,11 +50,17 @@
                     firstQuote = Math.Min(firstSingleQuote, firstDoubleQuote);
 
                 //find the second quote based on the single/double value used for the firstQuote
-                var secondQuote = -1;
+                int secondQuote;
                 if (firstSingleQuote == firstQuote)
                     secondQuote = attributes.IndexOf('\'', firstQuote + 1);
                 else
                     secondQuote = attributes.IndexOf('\"', firstQuote + 1);
+
+                //possibly malformed tag, fail node gracefully
+                if (secondQuote < 0)
+                {
+                    break;
+                }
 
                 var name = attributes[attPos..(firstQuote - 1)];
                 var value = attributes[(firstQuote + 1)..secondQuote];
