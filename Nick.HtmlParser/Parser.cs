@@ -75,7 +75,19 @@ namespace HtmlParser
 
                 bool isCloseTag = html[pos + 1] == '/';
                 var closeChevronPos = pos;
-                while (html[++closeChevronPos] != '>') ;
+                while (html[++closeChevronPos] != '>')
+                {
+                    char c = html[closeChevronPos];
+                    //ignore chevrons found in in quotes
+                    if (c == '\'')
+                    {
+                        while (html[++closeChevronPos] != '\'') ;
+                    }
+                    if (c == '\"')
+                    {
+                        while (html[++closeChevronPos] != '\"') ;
+                    }
+                }
                 var isSelfClosing = html[closeChevronPos - 1] == '/';
 
                 var tagNameStartPos = isCloseTag ? pos + 2 : pos + 1;

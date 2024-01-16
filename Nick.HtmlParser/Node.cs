@@ -50,7 +50,7 @@
                     firstQuote = Math.Min(firstSingleQuote, firstDoubleQuote);
 
                 //find the second quote based on the single/double value used for the firstQuote
-                var secondQuote = -1;
+                int secondQuote;
                 if (firstSingleQuote == firstQuote)
                     secondQuote = attributes.IndexOf('\'', firstQuote + 1);
                 else
