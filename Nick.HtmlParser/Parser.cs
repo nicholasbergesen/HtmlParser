@@ -75,7 +75,48 @@ namespace HtmlParser
 
                 bool isCloseTag = html[pos + 1] == '/';
                 var closeChevronPos = pos;
-                while (html[++closeChevronPos] != '>') ;
+                while (html[++closeChevronPos] != '>')
+                {
+                    char c = html[closeChevronPos];
+
+                    //ignore chevrons found in in quotes
+                    if (c == '\'')
+                    {
+                        while (html[++closeChevronPos] != '\'')
+                        {
+                            //handle malformed quote chars
+                            //Exit if there is an opening tag preceeded by whitespace and then a closing tag (in reverse)
+                            if (html[closeChevronPos] == '<')
+                            {
+                                int end = closeChevronPos;
+                                while (html[--end] != '>') ;
+                                if (string.IsNullOrWhiteSpace(html[(end + 1)..closeChevronPos]))
+                                {
+                                    closeChevronPos = end - 1; //-1 added for outer while loop increment
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    if (c == '\"')
+                    {
+                        while (html[++closeChevronPos] != '\"')
+                        {
+                            //handle malformed quote chars
+                            //Exit if there is an opening tag preceeded by whitespace and then a closing tag (in reverse)
+                            if (html[closeChevronPos] == '<')
+                            {
+                                int end = closeChevronPos;
+                                while (html[--end] != '>') ;
+                                if (string.IsNullOrWhiteSpace(html[(end + 1)..closeChevronPos]))
+                                {
+                                    closeChevronPos = end - 1; //-1 added for outer while loop increment
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
                 var isSelfClosing = html[closeChevronPos - 1] == '/';
 
                 var tagNameStartPos = isCloseTag ? pos + 2 : pos + 1;

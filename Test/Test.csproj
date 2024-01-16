@@ -25,6 +25,12 @@
     <None Update="test2.html">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Update="test5.html">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="test4.html">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="test3.html">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

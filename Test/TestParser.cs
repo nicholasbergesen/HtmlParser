@@ -32,5 +32,21 @@ namespace Test
             var nodes = Parser.Parse(html, true);
             Assert.AreEqual(1410, nodes.Count);
         }
+
+        [TestMethod]
+        public void Parser4_Test()
+        {
+            var html = File.ReadAllText("test4.html");
+            var nodes = Parser.Parse(html, false);
+            Assert.AreEqual(1209, nodes.Count);
+        }
+
+        [TestMethod]
+        public void Parser5_Test()
+        {
+            var html = File.ReadAllText("test5.html");
+            var nodes = Parser.Parse(html, false);
+            Assert.AreEqual(829, nodes.Count);
+        }
     }
 }
