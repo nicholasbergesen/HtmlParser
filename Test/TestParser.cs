@@ -38,7 +38,7 @@ namespace Test
         {
             var html = File.ReadAllText("test4.html");
             var nodes = Parser.Parse(html, false);
-            Assert.AreEqual(1410, nodes.Count);
+            Assert.AreEqual(1209, nodes.Count);
         }
 
         [TestMethod]

@@ -56,6 +56,12 @@
                 else
                     secondQuote = attributes.IndexOf('\"', firstQuote + 1);
 
+                //possibly malformed tag, fail node gracefully
+                if (secondQuote < 0)
+                {
+                    break;
+                }
+
                 var name = attributes[attPos..(firstQuote - 1)];
                 var value = attributes[(firstQuote + 1)..secondQuote];
                 //TODO: Include in document errors when there are duplicates.
